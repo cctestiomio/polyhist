@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "functions": {
+    "api/*.js": {
+      "runtime": "nodejs22.x",
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron-snapshot",
+      "schedule": "5 7 * * *"
+    }
+  ]
+}

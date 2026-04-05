@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polymarket Portfolio Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #f0f2f7;
+      --surface:   #ffffff;
+      --surface2:  #f8f9fc;
+      --border:    #e4e8f0;
+      --border2:   #edf0f7;
+      --text:      #111827;
+      --text2:     #374151;
+      --muted:     #9ca3af;
+      --muted2:    #6b7280;
+      --green:     #16a34a;
+      --green-bg:  #f0fdf4;
+      --green-bdr: #bbf7d0;
+      --red:       #dc2626;
+      --red-bg:    #fff1f2;
+      --red-bdr:   #fecdd3;
+      --accent:    #6366f1;
+      --accent-bg: #eef2ff;
+      --accent-bdr:#c7d2fe;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 16px rgba(0,0,0,.07), 0 1px 4px rgba(0,0,0,.04);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      height: 60px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+      gap: 16px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -.3px;
+      flex-shrink: 0;
+    }
+    .logo-icon {
+      width: 30px;
+      height: 30px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .last-updated {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .header-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .header-btn:hover {
+      background: var(--accent-bg);
+      border-color: var(--accent-bdr);
+      color: var(--accent);
+    }
+    .file-status {
+      font-size: 12px;
+      color: var(--muted2);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px 24px;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 22px 18px;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow .2s, transform .2s;
+    }
+    .stat-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted2);
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.5px;
+    }
+    .stat-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 7px;
+      font-weight: 500;
+    }
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+    .neutral { color: var(--text); }
+
+    .chart-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px 24px 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .chart-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 16px;
+    }
+    .chart-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .chart-meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+      font-weight: 500;
+      max-width: 760px;
+      line-height: 1.4;
+    }
+    .tab-group {
+      display: flex;
+      gap: 3px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      flex-shrink: 0;
+    }
+    .tab {
+      padding: 5px 14px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .15s;
+      color: var(--muted2);
+      border: none;
+      background: transparent;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .tab.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    }
+    .tab:hover:not(.active) { color: var(--text2); }
+    .chart-wrap { position: relative; height: 260px; }
+
+    .wallets-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .wallet-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .wallet-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface2);
+    }
+    .wallet-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+    .wallet-addr {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .wallet-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .35; }
+    }
+    .wallet-total { text-align: right; }
+    .wallet-total-label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      margin-bottom: 3px;
+    }
+    .wallet-total-val {
+      font-size: 20px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.4px;
+    }
+
+    .wallet-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-bottom: 1px solid var(--border2);
+    }
+    .ws {
+      padding: 13px 18px;
+      border-right: 1px solid var(--border2);
+    }
+    .ws:last-child { border-right: none; }
+    .ws-label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      margin-bottom: 3px;
+    }
+    .ws-val {
+      font-size: 15px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .positions-wrap { padding: 16px 20px; }
+    .positions-title {
+      font-size: 12px;
+      color: var(--muted2);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      margin-bottom: 10px;
+    }
+    .cash-breakdown {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 10px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .position-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 8px;
+      border-radius: 10px;
+      transition: background .1s;
+    }
+    .position-item:hover { background: var(--surface2); }
+    .pos-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .pos-icon img { width: 100%; height: 100%; object-fit: cover; }
+    .pos-info { flex: 1; min-width: 0; }
+    .pos-title {
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text);
+    }
+    .pos-outcome {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 3px;
+    }
+    .outcome-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .outcome-yes { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-bdr); }
+    .outcome-no  { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-bdr); }
+    .pos-detail {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+    .pos-price-bar {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-top: 5px;
+    }
+    .pos-price-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--accent);
+      transition: width .5s;
+    }
+    .pos-right { text-align: right; flex-shrink: 0; }
+    .pos-val {
+      font-size: 13px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+    }
+    .pos-pnl {
+      font-size: 12px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      margin-top: 2px;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 32px 0;
+      font-weight: 500;
+    }
+    .spinner {
+      display: inline-block;
+      width: 15px;
+      height: 15px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { color: var(--muted); font-size: 13px; font-weight: 500; }
+
+    .positions-scroll { max-height: 360px; overflow-y: auto; }
+    .positions-scroll::-webkit-scrollbar { width: 4px; }
+    .positions-scroll::-webkit-scrollbar-track { background: transparent; }
+    .positions-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    @media(max-width: 1100px) {
+      .header { height: auto; padding: 12px 16px; align-items: flex-start; }
+      .header-right { justify-content: flex-start; }
+    }
+    @media(max-width: 900px) {
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .wallets-grid { grid-template-columns: 1fr; }
+      .wallet-stats { grid-template-columns: repeat(2, 1fr); }
+      .chart-header { flex-direction: column; }
+    }
+    @media(max-width: 600px) {
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .container { padding: 16px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">◈</div>
+    Polymarket Portfolio
+  </div>
+  <div class="header-right">
+    <span class="file-status" id="fileStatus">Snapshot file: polymarket-snapshots.json</span>
+    <button class="header-btn" id="reloadSnapshotBtn">Reload Snapshot File</button>
+    <button class="header-btn" id="saveSnapshotBtn">Save Snapshot Now</button>
+    <span class="last-updated" id="lastUpdated">—</span>
+    <button class="header-btn" id="refreshBtn">↻ Refresh</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Total Portfolio</div>
+      <div class="stat-value neutral" id="totalPortfolio">—</div>
+      <div class="stat-sub" id="totalPositions">— positions</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Unrealized P&amp;L</div>
+      <div class="stat-value" id="totalUnrealized">—</div>
+      <div class="stat-sub" id="totalUnrealizedPct">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Realized P&amp;L</div>
+      <div class="stat-value" id="totalRealized">—</div>
+      <div class="stat-sub">All time</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Cash</div>
+      <div class="stat-value neutral" id="totalCash">—</div>
+      <div class="stat-sub">USDC.e + USDC across both wallets</div>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Historical P&amp;L (Saved Snapshots)</div>
+        <div class="chart-meta" id="pnlChartMeta">Loading snapshot history...</div>
+      </div>
+      <div class="tab-group" id="globalTabGroup">
+        <button class="tab active" data-window="1d">1D</button>
+        <button class="tab" data-window="1w">1W</button>
+        <button class="tab" data-window="1m">1M</button>
+        <button class="tab" data-window="all">ALL</button>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="pnlChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Total Portfolio Over Time</div>
+        <div class="chart-meta" id="portfolioChartMeta">Loading snapshot history...</div>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="portfolioChart"></canvas>
+    </div>
+  </div>
+
+  <div class="wallets-grid">
+    <div class="wallet-card" id="card-0"></div>
+    <div class="wallet-card" id="card-1"></div>
+  </div>
+
+</div>
+
+<script>
+const WALLETS = [
+  '0x6049761986af66Cd8E78997C940766Bd69C7F14f',
+  '0x33aB58E55895f39619815D31dFc92d90d65F9523'
+];
+
+const DATA_API = 'https://data-api.polymarket.com';
+const SNAPSHOT_API = '/api/snapshots';
+const AUTO_REFRESH_MS = 90000;
+const SNAPSHOT_MIN_INTERVAL_MS = 60000;
+
+const RPC_URLS = [
+  'https://polygon-rpc.com',
+  'https://polygon-bor-rpc.publicnode.com',
+  'https://1rpc.io/matic'
+];
+
+const TOKENS = [
+  { symbol: 'USDC.e', address: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', decimals: 6 },
+  { symbol: 'USDC',   address: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', decimals: 6 }
+];
+
+const ERC20_BALANCE_OF_SIG = '0x70a08231';
+const WALLET_LABELS = ['Wallet A', 'Wallet B'];
+const WALLET_COLORS = ['#6366f1', '#16a34a'];
+
+let currentWindow = '1d';
+let pnlChart = null;
+let portfolioChart = null;
+let refreshTimer = null;
+let currentMetrics = null;
+let snapshotStore = {
+  version: 1,
+  createdAt: null,
+  snapshots: []
+};
+
+const fmt = (n, dec = 2) => {
+  if (n == null || Number.isNaN(Number(n))) return '—';
+  return '$' + Math.abs(Number(n)).toLocaleString('en-US', {
+    minimumFractionDigits: dec,
+    maximumFractionDigits: dec
+  });
+};
+
+const fmtSigned = (n, dec = 2) => {
+  if (n == null || Number.isNaN(Number(n))) return '—';
+  const v = Number(n);
+  return (v >= 0 ? '+' : '-') + '$' + Math.abs(v).toLocaleString('en-US', {
+    minimumFractionDigits: dec,
+    maximumFractionDigits: dec
+  });
+};
+
+const fmtPct = n => {
+  if (n == null || Number.isNaN(Number(n))) return '—';
+  const v = Number(n);
+  return (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+};
+
+const colorVal = n => {
+  if (n == null || Number.isNaN(Number(n))) return '';
+  return Number(n) >= 0 ? 'pos' : 'neg';
+};
+
+const short = addr => addr.slice(0, 6) + '…' + addr.slice(-4);
+const windowMs = { '1d': 86400e3, '1w': 604800e3, '1m': 2592000e3, 'all': Infinity };
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function setFileStatus(text) {
+  document.getElementById('fileStatus').textContent = text;
+}
+
+async function fetchJSON(url, options = {}) {
+  const r = await fetch(url, {
+    headers: { Accept: 'application/json', ...(options.headers || {}) },
+    ...options
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
+  return r.json();
+}
+
+async function rpcCallWithFallback(method, params) {
+  let lastErr = null;
+
+  for (const url of RPC_URLS) {
+    try {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: Date.now(),
+          method,
+          params
+        })
+      });
+
+      if (!r.ok) throw new Error(`RPC HTTP ${r.status} from ${url}`);
+
+      const j = await r.json();
+      if (j.error) throw new Error(`${url}: ${j.error.message || 'RPC error'}`);
+      return j.result;
+    } catch (err) {
+      lastErr = err;
+      console.warn('RPC failed:', url, err);
+    }
+  }
+
+  throw lastErr || new Error('All RPCs failed');
+}
+
+function encodeBalanceOf(address) {
+  const clean = address.toLowerCase().replace(/^0x/, '');
+  return ERC20_BALANCE_OF_SIG + clean.padStart(64, '0');
+}
+
+async function fetchTokenBalance(walletAddress, tokenAddress, decimals = 6) {
+  const data = encodeBalanceOf(walletAddress);
+  const hex = await rpcCallWithFallback('eth_call', [{ to: tokenAddress, data }, 'latest']);
+  if (!hex || hex === '0x') return 0;
+
+  const raw = BigInt(hex);
+  const scale = 10n ** BigInt(decimals);
+  const whole = raw / scale;
+  const frac = raw % scale;
+
+  return Number(whole) + Number(frac) / Number(scale);
+}
+
+async function fetchAllCashBalances(addr) {
+  const balances = {};
+
+  for (const token of TOKENS) {
+    try {
+      balances[token.symbol] = await fetchTokenBalance(addr, token.address, token.decimals);
+    } catch (err) {
+      console.warn(`Failed to fetch ${token.symbol} for ${addr}`, err);
+      balances[token.symbol] = 0;
+    }
+  }
+
+  balances.totalCash = (balances['USDC.e'] || 0) + (balances['USDC'] || 0);
+  return balances;
+}
+
+async function fetchPositions(addr) {
+  const limit = 500;
+  const sizeThreshold = 0;
+  let offset = 0;
+  const out = [];
+
+  while (true) {
+    const batch = await fetchJSON(
+      `${DATA_API}/positions?user=${addr}&sizeThreshold=${sizeThreshold}&limit=${limit}&offset=${offset}&sortBy=CURRENT&sortDirection=DESC`
+    );
+
+    if (!Array.isArray(batch) || batch.length === 0) break;
+    out.push(...batch);
+    if (batch.length < limit) break;
+    offset += limit;
+  }
+
+  return out;
+}
+
+async function fetchPositionValue(addr) {
+  const res = await fetchJSON(`${DATA_API}/value?user=${addr}`);
+
+  if (Array.isArray(res) && res.length) return Number(res[0].value || 0);
+  if (res && typeof res === 'object' && 'value' in res) return Number(res.value || 0);
+  return 0;
+}
+
+function sanitizeSnapshotStore(raw) {
+  if (!raw || typeof raw !== 'object') {
+    return { version: 1, createdAt: new Date().toISOString(), snapshots: [] };
+  }
+
+  const cleaned = Array.isArray(raw.snapshots) ? raw.snapshots.map(s => ({
+    ts: typeof s.ts === 'string' ? s.ts : new Date().toISOString(),
+    totalPortfolio: Number(s.totalPortfolio || 0),
+    totalCash: Number(s.totalCash || 0),
+    totalPositionValue: Number(s.totalPositionValue || 0),
+    totalUnrealized: Number(s.totalUnrealized || 0),
+    totalRealized: Number(s.totalRealized || 0),
+    totalPnl: Number(s.totalPnl || 0),
+    wallets: Array.isArray(s.wallets) ? s.wallets : []
+  })) : [];
+
+  cleaned.sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+
+  return {
+    version: Number(raw.version || 1),
+    createdAt: raw.createdAt || new Date().toISOString(),
+    snapshots: cleaned
+  };
+}
+
+async function loadSnapshotStoreFromServer() {
+  const data = await fetchJSON(SNAPSHOT_API);
+  snapshotStore = sanitizeSnapshotStore(data);
+  setFileStatus(`Snapshot file: polymarket-snapshots.json · ${snapshotStore.snapshots.length} saved`);
+}
+
+function buildSnapshotFromCurrentMetrics() {
+  if (!currentMetrics) return null;
+
+  return {
+    ts: new Date().toISOString(),
+    totalPortfolio: Number(currentMetrics.totalPortfolio || 0),
+    totalCash: Number(currentMetrics.totalCash || 0),
+    totalPositionValue: Number(currentMetrics.totalPositionValue || 0),
+    totalUnrealized: Number(currentMetrics.totalUnrealized || 0),
+    totalRealized: Number(currentMetrics.totalRealized || 0),
+    totalPnl: Number(currentMetrics.totalPnl || 0),
+    wallets: currentMetrics.wallets || []
+  };
+}
+
+function snapshotsAreSame(a, b) {
+  if (!a || !b) return false;
+  const keys = ['totalPortfolio','totalCash','totalPositionValue','totalUnrealized','totalRealized','totalPnl'];
+  return keys.every(k => Math.abs(Number(a[k] || 0) - Number(b[k] || 0)) < 0.005);
+}
+
+async function persistSnapshotStore() {
+  await fetchJSON(SNAPSHOT_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(snapshotStore)
+  });
+  setFileStatus(`Snapshot file: polymarket-snapshots.json · ${snapshotStore.snapshots.length} saved`);
+}
+
+async function appendCurrentSnapshotIfNeeded(force = false) {
+  if (!currentMetrics) return false;
+
+  const snapshot = buildSnapshotFromCurrentMetrics();
+  if (!snapshot) return false;
+
+  const list = snapshotStore.snapshots;
+  const last = list.length ? list[list.length - 1] : null;
+  const nowMs = new Date(snapshot.ts).getTime();
+  const lastMs = last ? new Date(last.ts).getTime() : 0;
+
+  const shouldAppend = force
+    || !last
+    || (nowMs - lastMs >= SNAPSHOT_MIN_INTERVAL_MS)
+    || !snapshotsAreSame(last, snapshot);
+
+  if (!shouldAppend) return false;
+
+  snapshotStore.snapshots.push(snapshot);
+  if (snapshotStore.snapshots.length > 10000) {
+    snapshotStore.snapshots = snapshotStore.snapshots.slice(-10000);
+  }
+
+  await persistSnapshotStore();
+  return true;
+}
+
+async function saveSnapshotNow() {
+  if (!currentMetrics) {
+    alert('No live portfolio data loaded yet.');
+    return;
+  }
+
+  try {
+    await appendCurrentSnapshotIfNeeded(true);
+    renderCharts(currentWindow);
+  } catch (err) {
+    console.error('Manual snapshot save failed:', err);
+    alert(`Could not save snapshot: ${err.message || err}`);
+  }
+}
+
+function getSnapshotsForWindow(win) {
+  const now = Date.now();
+  const cutoff = win === 'all' ? 0 : now - windowMs[win];
+  const snapshots = Array.isArray(snapshotStore.snapshots) ? snapshotStore.snapshots : [];
+
+  if (!snapshots.length) return [];
+
+  let filtered = snapshots.filter(s => new Date(s.ts).getTime() >= cutoff);
+  if (!filtered.length) filtered = [snapshots[snapshots.length - 1]];
+
+  const maxPts = 200;
+  let sampled = filtered;
+
+  if (filtered.length > maxPts) {
+    const step = Math.ceil(filtered.length / maxPts);
+    sampled = filtered.filter((_, i) => i % step === 0);
+    if (sampled[sampled.length - 1] !== filtered[filtered.length - 1]) {
+      sampled.push(filtered[filtered.length - 1]);
+    }
+  }
+
+  return sampled;
+}
+
+function getLabelsForSnapshots(win, snapshots) {
+  return snapshots.map(p => {
+    const d = new Date(p.ts);
+    if (win === '1d') return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    if (win === '1w') return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  });
+}
+
+function makeLineChart(canvasId, existingChart, labels, data, mode = 'signed') {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  const lastVal = data?.length ? Number(data[data.length - 1]) : 0;
+  const isPos = mode === 'neutral' ? true : lastVal >= 0;
+  const lineCol = mode === 'neutral' ? '#6366f1' : (isPos ? '#6366f1' : '#dc2626');
+  const grad = ctx.createLinearGradient(0, 0, 0, 260);
+  grad.addColorStop(0, mode === 'neutral' ? 'rgba(99,102,241,.14)' : (isPos ? 'rgba(99,102,241,.14)' : 'rgba(220,38,38,.1)'));
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+
+  if (existingChart) existingChart.destroy();
+
+  return new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        borderColor: lineCol,
+        backgroundColor: grad,
+        borderWidth: 2.5,
+        tension: 0.35,
+        fill: true,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: lineCol,
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#fff',
+          borderColor: '#e4e8f0',
+          borderWidth: 1,
+          titleColor: '#9ca3af',
+          titleFont: { family: 'Plus Jakarta Sans', size: 11, weight: '600' },
+          bodyColor: '#111827',
+          bodyFont: { family: 'Plus Jakarta Sans', size: 14, weight: '700' },
+          padding: 10,
+          cornerRadius: 10,
+          callbacks: {
+            label: ctx => {
+              const v = Number(ctx.raw || 0);
+              return mode === 'neutral' ? fmt(v) : fmtSigned(v);
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#f0f2f7', drawBorder: false },
+          ticks: {
+            color: '#9ca3af',
+            font: { family: 'Plus Jakarta Sans', size: 11, weight: '500' },
+            maxTicksLimit: 7
+          },
+          border: { display: false }
+        },
+        y: {
+          grid: { color: '#f0f2f7', drawBorder: false },
+          ticks: {
+            color: '#9ca3af',
+            font: { family: 'Plus Jakarta Sans', size: 11, weight: '500' },
+            callback: v => {
+              const num = Number(v || 0);
+              if (mode === 'neutral') {
+                return '$' + Math.abs(num).toLocaleString('en-US', { maximumFractionDigits: 0 });
+              }
+              return (num >= 0 ? '+$' : '−$') + Math.abs(num).toLocaleString('en-US', { maximumFractionDigits: 0 });
+            }
+          },
+          border: { display: false }
+        }
+      }
+    }
+  });
+}
+
+function renderCharts(win) {
+  const snapshots = getSnapshotsForWindow(win);
+
+  if (!snapshots.length) {
+    pnlChart = makeLineChart('pnlChart', pnlChart, ['Now'], [Number(currentMetrics?.totalPnl || 0)], 'signed');
+    portfolioChart = makeLineChart('portfolioChart', portfolioChart, ['Now'], [Number(currentMetrics?.totalPortfolio || 0)], 'neutral');
+  } else {
+    const labels = getLabelsForSnapshots(win, snapshots);
+    pnlChart = makeLineChart('pnlChart', pnlChart, labels, snapshots.map(s => Number(s.totalPnl || 0)), 'signed');
+    portfolioChart = makeLineChart('portfolioChart', portfolioChart, labels, snapshots.map(s => Number(s.totalPortfolio || 0)), 'neutral');
+  }
+
+  const count = snapshotStore.snapshots.length;
+  document.getElementById('pnlChartMeta').textContent =
+    count > 0
+      ? `Based on ${count.toLocaleString()} saved snapshots from polymarket-snapshots.json.`
+      : 'No saved snapshots yet.';
+  document.getElementById('portfolioChartMeta').textContent =
+    count > 0
+      ? `Shows Total Portfolio from the same ${count.toLocaleString()} saved snapshots.`
+      : 'No saved snapshots yet.';
+}
+
+function setWindow(win) {
+  currentWindow = win;
+  document.querySelectorAll('#globalTabGroup .tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.window === win);
+  });
+  renderCharts(win);
+}
+
+function renderWalletCard(idx, addr, positions, cashBalance, authoritativePositionValue, cashBreakdown = {}) {
+  const totalUnreal = positions.reduce((s, p) => s + Number(p.cashPnl || 0), 0);
+  const totalReal = positions.reduce((s, p) => s + Number(p.realizedPnl || 0), 0);
+  const positionValue = Number(authoritativePositionValue || 0);
+  const walletPortfolio = positionValue + Number(cashBalance || 0);
+
+  const posHTML = positions.slice(0, 25).map(p => {
+    const pnl = Number(p.cashPnl || 0);
+    const isYes = p.outcome?.toLowerCase() === 'yes';
+    const price = Number(p.curPrice || 0) * 100;
+    const shares = Number(p.size || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+
+    return `
+      <div class="position-item">
+        <div class="pos-icon">
+          ${p.icon ? `<img src="${p.icon}" alt="" onerror="this.style.display='none'">` : '◈'}
+        </div>
+        <div class="pos-info">
+          <div class="pos-title">${escHtml(p.title || 'Unknown Market')}</div>
+          <div class="pos-outcome">
+            <span class="outcome-badge ${isYes ? 'outcome-yes' : 'outcome-no'}">${escHtml(p.outcome || '?')}</span>
+            <span class="pos-detail">${price.toFixed(0)}¢ · ${shares} shares</span>
+          </div>
+          <div class="pos-price-bar">
+            <div class="pos-price-fill" style="width:${Math.min(price, 100)}%"></div>
+          </div>
+        </div>
+        <div class="pos-right">
+          <div class="pos-val">${fmt(Number(p.currentValue || 0))}</div>
+          <div class="pos-pnl ${colorVal(pnl)}">${fmtSigned(pnl)}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const cashLabel = `USDC.e ${fmt(cashBreakdown['USDC.e'] || 0)} · USDC ${fmt(cashBreakdown['USDC'] || 0)}`;
+
+  document.getElementById(`card-${idx}`).innerHTML = `
+    <div class="wallet-header">
+      <div>
+        <div class="wallet-name">${WALLET_LABELS[idx]}</div>
+        <div class="wallet-addr">
+          <div class="wallet-dot" style="background:${WALLET_COLORS[idx]}"></div>
+          ${short(addr)}
+        </div>
+      </div>
+      <div class="wallet-total">
+        <div class="wallet-total-label">Portfolio Value</div>
+        <div class="wallet-total-val neutral">${fmt(walletPortfolio)}</div>
+      </div>
+    </div>
+    <div class="wallet-stats">
+      <div class="ws">
+        <div class="ws-label">Positions</div>
+        <div class="ws-val neutral">${fmt(positionValue)}</div>
+      </div>
+      <div class="ws">
+        <div class="ws-label">Cash</div>
+        <div class="ws-val neutral">${fmt(cashBalance)}</div>
+      </div>
+      <div class="ws">
+        <div class="ws-label">Unrealized</div>
+        <div class="ws-val ${colorVal(totalUnreal)}">${fmtSigned(totalUnreal)}</div>
+      </div>
+      <div class="ws">
+        <div class="ws-label">Realized</div>
+        <div class="ws-val ${colorVal(totalReal)}">${fmtSigned(totalReal)}</div>
+      </div>
+    </div>
+    <div class="positions-wrap">
+      <div class="positions-title">Open Positions · ${positions.length}</div>
+      <div class="cash-breakdown">${cashLabel}</div>
+      ${positions.length === 0
+        ? '<div class="empty-state">No open positions found</div>'
+        : `<div class="positions-scroll">${posHTML}</div>`}
+    </div>
+  `;
+}
+
+function setCardLoading(idx, addr) {
+  document.getElementById(`card-${idx}`).innerHTML = `
+    <div class="wallet-header">
+      <div>
+        <div class="wallet-name">${WALLET_LABELS[idx]}</div>
+        <div class="wallet-addr"><div class="wallet-dot"></div>${short(addr)}</div>
+      </div>
+    </div>
+    <div style="padding:44px; text-align:center;">
+      <span class="spinner"></span>
+      <span class="loading-text">Fetching positions, value, and cash…</span>
+    </div>
+  `;
+}
+
+async function reloadSnapshotFile() {
+  try {
+    await loadSnapshotStoreFromServer();
+    renderCharts(currentWindow);
+  } catch (err) {
+    console.error('Reload snapshot file failed:', err);
+    alert(`Could not reload snapshot file: ${err.message || err}`);
+  }
+}
+
+async function loadAll() {
+  document.getElementById('lastUpdated').textContent = 'Loading…';
+  WALLETS.forEach((addr, i) => setCardLoading(i, addr));
+
+  ['totalPortfolio', 'totalUnrealized', 'totalRealized', 'totalCash']
+    .forEach(id => { document.getElementById(id).textContent = '…'; });
+
+  const results = [];
+  const cashResults = [];
+  const cashBreakdownResults = [];
+  const valueResults = [];
+
+  await Promise.allSettled(
+    WALLETS.map(async (addr, i) => {
+      try {
+        const [positions, cashBreakdown, positionValue] = await Promise.all([
+          fetchPositions(addr),
+          fetchAllCashBalances(addr),
+          fetchPositionValue(addr).catch(err => {
+            console.warn(`Value fetch failed for ${addr}:`, err);
+            return 0;
+          })
+        ]);
+
+        results[i] = Array.isArray(positions) ? positions : [];
+        cashBreakdownResults[i] = cashBreakdown || { 'USDC.e': 0, 'USDC': 0, totalCash: 0 };
+        cashResults[i] = Number(cashBreakdownResults[i].totalCash || 0);
+        valueResults[i] = Number.isFinite(Number(positionValue)) ? Number(positionValue) : 0;
+
+        renderWalletCard(i, addr, results[i], cashResults[i], valueResults[i], cashBreakdownResults[i]);
+      } catch (e) {
+        results[i] = [];
+        cashResults[i] = 0;
+        valueResults[i] = 0;
+        cashBreakdownResults[i] = { 'USDC.e': 0, 'USDC': 0, totalCash: 0 };
+
+        console.error(`Wallet ${i} error:`, e);
+
+        document.getElementById(`card-${i}`).innerHTML = `
+          <div class="wallet-header">
+            <div>
+              <div class="wallet-name">${WALLET_LABELS[i]}</div>
+              <div class="wallet-addr">
+                <div class="wallet-dot" style="background:#dc2626"></div>
+                ${short(addr)}
+              </div>
+            </div>
+          </div>
+          <div style="padding:28px; text-align:center; color:#dc2626; font-size:13px; font-weight:500;">
+            ⚠ Could not load data — check browser console.
+          </div>
+        `;
+      }
+    })
+  );
+
+  const allPos = results.flat();
+  const grandCash = cashResults.reduce((s, n) => s + Number(n || 0), 0);
+  const grandPositionValue = valueResults.reduce((s, n) => s + Number(n || 0), 0);
+  const grandTotal = grandPositionValue + grandCash;
+
+  const grandUnreal = allPos.reduce((s, p) => s + Number(p.cashPnl || 0), 0);
+  const grandReal = allPos.reduce((s, p) => s + Number(p.realizedPnl || 0), 0);
+  const grandInit = allPos.reduce((s, p) => s + Number(p.initialValue || 0), 0);
+  const grandPnl = grandUnreal + grandReal;
+  const pct = grandInit > 0 ? (grandUnreal / grandInit) * 100 : 0;
+
+  currentMetrics = {
+    totalPortfolio: grandTotal,
+    totalCash: grandCash,
+    totalPositionValue: grandPositionValue,
+    totalUnrealized: grandUnreal,
+    totalRealized: grandReal,
+    totalPnl: grandPnl,
+    wallets: WALLETS.map((addr, i) => ({
+      address: addr,
+      cash: Number(cashResults[i] || 0),
+      positions: Number(valueResults[i] || 0),
+      usdc_e: Number(cashBreakdownResults[i]?.['USDC.e'] || 0),
+      usdc: Number(cashBreakdownResults[i]?.['USDC'] || 0)
+    }))
+  };
+
+  const set = (id, val, cls) => {
+    const el = document.getElementById(id);
+    el.textContent = val;
+    if (cls) el.className = 'stat-value ' + cls;
+  };
+
+  set('totalPortfolio', fmt(grandTotal), 'neutral');
+  set('totalUnrealized', fmtSigned(grandUnreal), colorVal(grandUnreal));
+  set('totalRealized', fmtSigned(grandReal), colorVal(grandReal));
+  set('totalCash', fmt(grandCash), 'neutral');
+
+  document.getElementById('totalPositions').textContent =
+    `${allPos.length} listed positions across ${WALLETS.length} wallets`;
+
+  document.getElementById('totalUnrealizedPct').textContent =
+    fmtPct(pct) + ' unrealized';
+
+  try {
+    await appendCurrentSnapshotIfNeeded(false);
+  } catch (err) {
+    console.warn('Auto snapshot save failed:', err);
+    setFileStatus(`Auto-save failed: ${err.message || err}`);
+  }
+
+  renderCharts(currentWindow);
+
+  document.getElementById('lastUpdated').textContent =
+    'Updated ' + new Date().toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(loadAll, AUTO_REFRESH_MS);
+}
+
+document.getElementById('reloadSnapshotBtn').addEventListener('click', reloadSnapshotFile);
+document.getElementById('saveSnapshotBtn').addEventListener('click', saveSnapshotNow);
+document.getElementById('refreshBtn').addEventListener('click', loadAll);
+
+document.querySelectorAll('#globalTabGroup .tab').forEach(btn => {
+  btn.addEventListener('click', () => setWindow(btn.dataset.window));
+});
+
+(async function init() {
+  try {
+    await loadSnapshotStoreFromServer();
+  } catch (err) {
+    console.error('Initial snapshot load failed:', err);
+    setFileStatus('Snapshot file load failed');
+  }
+
+  renderCharts(currentWindow);
+  await loadAll();
+})();
+</script>
+</body>
+</html>

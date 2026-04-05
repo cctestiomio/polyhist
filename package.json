@@ -1,0 +1,12 @@
+{
+  "name": "polymarket-portfolio-vercel",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Polymarket portfolio tracker with Vercel Blob persistence and daily cron snapshots.",
+  "engines": {
+    "node": "22.x"
+  },
+  "dependencies": {
+    "@vercel/blob": "^1.1.1"
+  }
+}

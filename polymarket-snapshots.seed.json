@@ -1,0 +1,231 @@
+{
+  "version": 1,
+  "createdAt": "2026-04-05T20:13:39.902Z",
+  "snapshots": [
+    {
+      "ts": "2026-04-05T20:13:39.988Z",
+      "totalPortfolio": 316245.42673905,
+      "totalCash": 92127.399398,
+      "totalPositionValue": 224118.02734105004,
+      "totalUnrealized": 15.097020121721908,
+      "totalRealized": 21.925393,
+      "totalPnl": 37.02241312172191,
+      "wallets": [
+        {
+          "address": "0x6049761986af66Cd8E78997C940766Bd69C7F14f",
+          "cash": 35218.782424,
+          "positions": 75776.56980918,
+          "usdc_e": 35218.782424,
+          "usdc": 0
+        },
+        {
+          "address": "0x33aB58E55895f39619815D31dFc92d90d65F9523",
+          "cash": 56908.616974,
+          "positions": 148341.45753187002,
+          "usdc_e": 56908.616974,
+          "usdc": 0
+        }
+      ]
+    },
+    {
+      "ts": "2026-04-05T20:13:42.103Z",
+      "totalPortfolio": 316245.42673905,
+      "totalCash": 92127.399398,
+      "totalPositionValue": 224118.02734105004,
+      "totalUnrealized": 15.097020121721908,
+      "totalRealized": 21.925393,
+      "totalPnl": 37.02241312172191,
+      "wallets": [
+        {
+          "address": "0x6049761986af66Cd8E78997C940766Bd69C7F14f",
+          "cash": 35218.782424,
+          "positions": 75776.56980918,
+          "usdc_e": 35218.782424,
+          "usdc": 0
+        },
+        {
+          "address": "0x33aB58E55895f39619815D31dFc92d90d65F9523",
+          "cash": 56908.616974,
+          "positions": 148341.45753187002,
+          "usdc_e": 56908.616974,
+          "usdc": 0
+        }
+      ]
+    },
+    {
+      "ts": "2026-04-05T20:14:45.735Z",
+      "totalPortfolio": 316245.42673905,
+      "totalCash": 92127.399398,
+      "totalPositionValue": 224118.02734105004,
+      "totalUnrealized": 15.097020121721908,
+      "totalRealized": 21.925393,
+      "totalPnl": 37.02241312172191,
+      "wallets": [
+        {
+          "address": "0x6049761986af66Cd8E78997C940766Bd69C7F14f",
+          "cash": 35218.782424,
+          "positions": 75776.56980918,
+          "usdc_e": 35218.782424,
+          "usdc": 0
+        },
+        {
+          "address": "0x33aB58E55895f39619815D31dFc92d90d65F9523",
+          "cash": 56908.616974,
+          "positions": 148341.45753187002,
+          "usdc_e": 56908.616974,
+          "usdc": 0
+        }
+      ]
+    },
+    {
+      "ts": "2026-04-05T20:15:06.749Z",
+      "totalPortfolio": 316353.55222281005,
+      "totalCash": 79959.785848,
+      "totalPositionValue": 236393.76637481005,
+      "totalUnrealized": 122.73839158154247,
+      "totalRealized": 21.925393,
+      "totalPnl": 144.66378458154247,
+      "wallets": [
+        {
+          "address": "0x6049761986af66Cd8E78997C940766Bd69C7F14f",
+          "cash": 33312.147624,
+          "positions": 77781.61000546001,
+          "usdc_e": 33312.147624,
+          "usdc": 0
+        },
+        {
+          "address": "0x33aB58E55895f39619815D31dFc92d90d65F9523",
+          "cash": 46647.638224,
+          "positions": 158612.15636935004,
+          "usdc_e": 46647.638224,
+          "usdc": 0
+        }
+      ]
+    },
+    {
+      "ts": "2026-04-05T20:16:38.350Z",
+      "totalPortfolio": 316337.3176527651,
+      "totalCash": 79875.370348,
+      "totalPositionValue": 236461.94730476505,
+      "totalUnrealized": 122.8618426915417,
+      "totalRealized": 21.925393,
+      "totalPnl": 144.7872356915417,
+      "wallets": [
+        {
+          "address": "0x6049761986af66Cd8E78997C940766Bd69C7F14f",
+          "cash": 33295.184604,
+          "positions": 77797.21220046001,
+          "usdc_e": 33295.184604,
+          "usdc": 0
+        },
+        {
+          "address": "0x33aB58E55895f39619815D31dFc92d90d65F9523",
+          "cash": 46580.185744,
+          "positions": 158664.73510430503,
+          "usdc_e": 46580.185744,
+          "usdc": 0
+        }
+      ]
+    },
+    {
+      "ts": "2026-04-05T20:18:09.247Z",
+      "totalPortfolio": 316354.25802743505,
+      "totalCash": 80032.913588,
+      "totalPositionValue": 236321.34443943505,
+      "totalUnrealized": 121.85333317654162,
+      "totalRealized": 21.925393,
+      "totalPnl": 143.77872617654162,
+      "wallets": [
+        {
+          "address": "0x6049761986af66Cd8E78997C940766Bd69C7F14f",
+          "cash": 33452.727844,
+          "positions": 77641.62683013002,
+          "usdc_e": 33452.727844,
+          "usdc": 0
+        },
+        {
+          "address": "0x33aB58E55895f39619815D31dFc92d90d65F9523",
+          "cash": 46580.185744,
+          "positions": 158679.71760930505,
+          "usdc_e": 46580.185744,
+          "usdc": 0
+        }
+      ]
+    },
+    {
+      "ts": "2026-04-05T20:19:40.354Z",
+      "totalPortfolio": 316354.4074273901,
+      "totalCash": 79884.262388,
+      "totalPositionValue": 236470.14503939007,
+      "totalUnrealized": 122.0050232276415,
+      "totalRealized": 21.925393,
+      "totalPnl": 143.9304162276415,
+      "wallets": [
+        {
+          "address": "0x6049761986af66Cd8E78997C940766Bd69C7F14f",
+          "cash": 33405.335284,
+          "positions": 77689.04311013002,
+          "usdc_e": 33405.335284,
+          "usdc": 0
+        },
+        {
+          "address": "0x33aB58E55895f39619815D31dFc92d90d65F9523",
+          "cash": 46478.927104,
+          "positions": 158781.10192926004,
+          "usdc_e": 46478.927104,
+          "usdc": 0
+        }
+      ]
+    },
+    {
+      "ts": "2026-04-05T20:20:59.884Z",
+      "totalPortfolio": 315954.9388873901,
+      "totalCash": 79386.043248,
+      "totalPositionValue": 236568.89563939004,
+      "totalUnrealized": 121.9664538876415,
+      "totalRealized": 21.925393,
+      "totalPnl": 143.89184688764152,
+      "wallets": [
+        {
+          "address": "0x6049761986af66Cd8E78997C940766Bd69C7F14f",
+          "cash": 32908.304954,
+          "positions": 77787.79371013,
+          "usdc_e": 32908.304954,
+          "usdc": 0
+        },
+        {
+          "address": "0x33aB58E55895f39619815D31dFc92d90d65F9523",
+          "cash": 46477.738294,
+          "positions": 158781.10192926004,
+          "usdc_e": 46477.738294,
+          "usdc": 0
+        }
+      ]
+    },
+    {
+      "ts": "2026-04-05T20:21:05.449Z",
+      "totalPortfolio": 315839.95184739004,
+      "totalCash": 79353.445878,
+      "totalPositionValue": 236486.50596939004,
+      "totalUnrealized": 121.9664538876415,
+      "totalRealized": 21.925393,
+      "totalPnl": 143.89184688764152,
+      "wallets": [
+        {
+          "address": "0x6049761986af66Cd8E78997C940766Bd69C7F14f",
+          "cash": 32875.707584,
+          "positions": 77705.40404013,
+          "usdc_e": 32875.707584,
+          "usdc": 0
+        },
+        {
+          "address": "0x33aB58E55895f39619815D31dFc92d90d65F9523",
+          "cash": 46477.738294,
+          "positions": 158781.10192926004,
+          "usdc_e": 46477.738294,
+          "usdc": 0
+        }
+      ]
+    }
+  ]
+}
