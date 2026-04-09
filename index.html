@@ -487,7 +487,7 @@
   <div class="chart-section">
     <div class="chart-header">
       <div>
-        <div class="chart-title">Historical P&amp;L (Saved Snapshots)</div>
+        <div class="chart-title">Daily Portfolio Change</div>
         <div class="chart-meta" id="pnlChartMeta">Loading snapshot history...</div>
       </div>
       <div class="tab-group" id="globalTabGroup">
@@ -838,6 +838,115 @@ function getLabelsForSnapshots(win, snapshots) {
   });
 }
 
+function makeDailyChangeData(win) {
+  const snapshots = Array.isArray(snapshotStore.snapshots) ? snapshotStore.snapshots : [];
+  if (!snapshots.length) return { labels: [], deltas: [] };
+
+  // Group by calendar day — last snapshot of each day wins
+  const byDay = {};
+  for (const s of snapshots) {
+    const dayKey = new Date(s.ts).toLocaleDateString('en-CA'); // YYYY-MM-DD
+    byDay[dayKey] = s;
+  }
+
+  const allDays = Object.keys(byDay).sort();
+  if (allDays.length < 2) return { labels: [], deltas: [] };
+
+  // Determine window cutoff
+  const now = Date.now();
+  const cutoff = win === 'all' ? 0 : now - windowMs[win];
+
+  // Days that fall inside the window
+  const windowDays = allDays.filter(d => new Date(d + 'T00:00:00').getTime() >= cutoff);
+  if (!windowDays.length) return { labels: [], deltas: [] };
+
+  // We need the day immediately before windowDays[0] to compute the first delta
+  const firstIdx = allDays.indexOf(windowDays[0]);
+  const startIdx = Math.max(0, firstIdx - 1);
+  const daysToUse = allDays.slice(startIdx);
+
+  const labels = [];
+  const deltas = [];
+
+  for (let i = 1; i < daysToUse.length; i++) {
+    const prev = byDay[daysToUse[i - 1]];
+    const curr = byDay[daysToUse[i]];
+    const delta = Number(curr.totalPortfolio || 0) - Number(prev.totalPortfolio || 0);
+    const dayDate = new Date(daysToUse[i] + 'T12:00:00');
+    labels.push(dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+    deltas.push(delta);
+  }
+
+  return { labels, deltas };
+}
+
+function makeBarChart(canvasId, existingChart, labels, data) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  if (existingChart) existingChart.destroy();
+
+  const bgColors = data.map(v => v >= 0 ? 'rgba(99,102,241,0.70)' : 'rgba(220,38,38,0.60)');
+  const borderColors = data.map(v => v >= 0 ? '#6366f1' : '#dc2626');
+
+  return new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: bgColors,
+        borderColor: borderColors,
+        borderWidth: 1.5,
+        borderRadius: 4,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e293b',
+          titleColor: '#94a3b8',
+          bodyColor: '#f1f5f9',
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            label: ctx => {
+              const v = Number(ctx.parsed.y || 0);
+              return (v >= 0 ? '+$' : '\u2212$') + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: '#9ca3af',
+            font: { family: 'Plus Jakarta Sans', size: 11, weight: '500' },
+            maxTicksLimit: 10
+          },
+          border: { display: false }
+        },
+        y: {
+          grid: { color: '#f0f2f7', drawBorder: false },
+          ticks: {
+            color: '#9ca3af',
+            font: { family: 'Plus Jakarta Sans', size: 11, weight: '500' },
+            callback: v => {
+              const num = Number(v || 0);
+              return (num >= 0 ? '+$' : '\u2212$') + Math.abs(num).toLocaleString('en-US', { maximumFractionDigits: 0 });
+            }
+          },
+          border: { display: false }
+        }
+      }
+    }
+  });
+}
+
 function makeLineChart(canvasId, existingChart, labels, data, mode = 'signed') {
   const ctx = document.getElementById(canvasId).getContext('2d');
   const lastVal = data?.length ? Number(data[data.length - 1]) : 0;
@@ -923,21 +1032,27 @@ function makeLineChart(canvasId, existingChart, labels, data, mode = 'signed') {
 
 function renderCharts(win) {
   const snapshots = getSnapshotsForWindow(win);
+  const { labels: dayLabels, deltas } = makeDailyChangeData(win);
+
+  if (dayLabels.length) {
+    pnlChart = makeBarChart('pnlChart', pnlChart, dayLabels, deltas);
+  } else {
+    // Not enough data yet — show an empty placeholder bar
+    pnlChart = makeBarChart('pnlChart', pnlChart, ['—'], [0]);
+  }
 
   if (!snapshots.length) {
-    pnlChart = makeLineChart('pnlChart', pnlChart, ['Now'], [Number(currentMetrics?.totalPnl || 0)], 'signed');
     portfolioChart = makeLineChart('portfolioChart', portfolioChart, ['Now'], [Number(currentMetrics?.totalPortfolio || 0)], 'neutral');
   } else {
     const labels = getLabelsForSnapshots(win, snapshots);
-    pnlChart = makeLineChart('pnlChart', pnlChart, labels, snapshots.map(s => Number(s.totalPnl || 0)), 'signed');
     portfolioChart = makeLineChart('portfolioChart', portfolioChart, labels, snapshots.map(s => Number(s.totalPortfolio || 0)), 'neutral');
   }
 
   const count = snapshotStore.snapshots.length;
   document.getElementById('pnlChartMeta').textContent =
-    count > 0
-      ? `Based on ${count.toLocaleString()} saved snapshots from polymarket-snapshots.json.`
-      : 'No saved snapshots yet.';
+    dayLabels.length > 0
+      ? `Day-over-day change across ${dayLabels.length} day${dayLabels.length !== 1 ? 's' : ''} of snapshots.`
+      : 'Need snapshots from at least 2 different days to compute daily changes.';
   document.getElementById('portfolioChartMeta').textContent =
     count > 0
       ? `Shows Total Portfolio from the same ${count.toLocaleString()} saved snapshots.`
