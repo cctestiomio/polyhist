@@ -1271,13 +1271,6 @@ async function loadAll() {
   document.getElementById('totalUnrealizedPct').textContent =
     fmtPct(pct) + ' unrealized';
 
-  try {
-    await appendCurrentSnapshotIfNeeded(false);
-  } catch (err) {
-    console.warn('Auto snapshot save failed:', err);
-    setFileStatus(`Auto-save failed: ${err.message || err}`);
-  }
-
   renderCharts(currentWindow);
 
   document.getElementById('lastUpdated').textContent =
@@ -1286,9 +1279,6 @@ async function loadAll() {
       minute: '2-digit',
       second: '2-digit'
     });
-
-  clearTimeout(refreshTimer);
-  refreshTimer = setTimeout(loadAll, AUTO_REFRESH_MS);
 }
 
 document.getElementById('reloadSnapshotBtn').addEventListener('click', reloadSnapshotFile);
