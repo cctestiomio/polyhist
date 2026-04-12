@@ -1045,7 +1045,16 @@ function renderCharts(win) {
     portfolioChart = makeLineChart('portfolioChart', portfolioChart, ['Now'], [Number(currentMetrics?.totalPortfolio || 0)], 'neutral');
   } else {
     const labels = getLabelsForSnapshots(win, snapshots);
-    portfolioChart = makeLineChart('portfolioChart', portfolioChart, labels, snapshots.map(s => Number(s.totalPortfolio || 0)), 'neutral');
+    const values = snapshots.map(s => Number(s.totalPortfolio || 0));
+
+    // Always append the current live value so the chart ends at "now" rather than
+    // at the last saved snapshot (which could be stale / lower than current).
+    if (currentMetrics) {
+      labels.push('Now');
+      values.push(Number(currentMetrics.totalPortfolio || 0));
+    }
+
+    portfolioChart = makeLineChart('portfolioChart', portfolioChart, labels, values, 'neutral');
   }
 
   const count = snapshotStore.snapshots.length;
