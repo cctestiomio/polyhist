@@ -838,21 +838,41 @@ function getLabelsForSnapshots(win, snapshots) {
   });
 }
 
+function utcDateKey(ts) {
+  // Returns "YYYY-MM-DD" in the browser's LOCAL timezone so that
+  // "Apr 11 at 11pm Pacific" is bucketed as Apr 11, not Apr 12.
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function makeDailyChangeData(win) {
   const snapshots = Array.isArray(snapshotStore.snapshots) ? snapshotStore.snapshots : [];
   if (!snapshots.length) return { labels: [], deltas: [] };
 
-  // Group by calendar day — last snapshot of each day wins
+  // Group by local calendar day — last snapshot of each day wins
   const byDay = {};
   for (const s of snapshots) {
-    const dayKey = new Date(s.ts).toLocaleDateString('en-CA'); // YYYY-MM-DD
+    const dayKey = utcDateKey(s.ts);
     byDay[dayKey] = s;
+  }
+
+  // Also bucket the current live value into today so the bar chart
+  // reflects today's change up to this moment (not just saved snapshots).
+  if (currentMetrics) {
+    const todayKey = utcDateKey(new Date().toISOString());
+    byDay[todayKey] = {
+      ts: new Date().toISOString(),
+      totalPortfolio: Number(currentMetrics.totalPortfolio || 0)
+    };
   }
 
   const allDays = Object.keys(byDay).sort();
   if (allDays.length < 2) return { labels: [], deltas: [] };
 
-  // Determine window cutoff
+  // Determine window cutoff using local midnight so the filter matches local day keys
   const now = Date.now();
   const cutoff = win === 'all' ? 0 : now - windowMs[win];
 
