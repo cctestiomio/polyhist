@@ -839,11 +839,13 @@ function getLabelsForSnapshots(win, snapshots) {
 }
 
 function utcDateKey(ts) {
-  // Returns "YYYY-MM-DD" in UTC so that snapshot bucketing is consistent
-  // regardless of the browser's local timezone. Snapshots are stored with
-  // UTC ISO timestamps (from the server cron), so we bucket by UTC date to
-  // avoid near-midnight local-time splits that cause phantom day deltas.
-  const d = new Date(ts);
+  // Returns "YYYY-MM-DD" in US/Pacific time (PDT = UTC-7).
+  // Snapshots are taken throughout the day in Pacific time, so we bucket by
+  // PT day to avoid evening snapshots (e.g. Apr 11 7pm PT = Apr 12 UTC) being
+  // wrongly grouped into the next UTC calendar day.
+  // Change PT_OFFSET_MS to 8*60*60*1000 during PST (winter, Nov-Mar).
+  const PT_OFFSET_MS = 7 * 60 * 60 * 1000; // UTC-7 (PDT)
+  const d = new Date(new Date(ts).getTime() - PT_OFFSET_MS);
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, '0');
   const day = String(d.getUTCDate()).padStart(2, '0');
@@ -879,7 +881,8 @@ function makeDailyChangeData(win) {
   const cutoff = win === 'all' ? 0 : now - windowMs[win];
 
   // Days that fall inside the window — use UTC midnight to match UTC day keys
-  const windowDays = allDays.filter(d => new Date(d + 'T00:00:00Z').getTime() >= cutoff);
+  // Add 7h to treat day keys (which are PT dates) as PT midnight boundaries
+  const windowDays = allDays.filter(d => new Date(d + 'T07:00:00Z').getTime() >= cutoff);
   if (!windowDays.length) return { labels: [], deltas: [] };
 
   // We need the day immediately before windowDays[0] to compute the first delta
@@ -894,9 +897,9 @@ function makeDailyChangeData(win) {
     const prev = byDay[daysToUse[i - 1]];
     const curr = byDay[daysToUse[i]];
     const delta = Number(curr.totalPortfolio || 0) - Number(prev.totalPortfolio || 0);
-    // Label with the PREVIOUS day (daysToUse[i-1]): cron runs 07:05 UTC = midnight PT,
-    // so "Apr 12 UTC snapshot" captures end-of-Apr-11 PT. The delta belongs to Apr 11.
-    const dayDate = new Date(daysToUse[i - 1] + 'T12:00:00Z');
+    // Label with the current PT day (daysToUse[i]): since we bucket by PT, the day key
+    // IS the correct PT calendar date that the user experienced this change on.
+    const dayDate = new Date(daysToUse[i] + 'T12:00:00Z');
     labels.push(dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }));
     deltas.push(delta);
   }
