@@ -894,8 +894,9 @@ function makeDailyChangeData(win) {
     const prev = byDay[daysToUse[i - 1]];
     const curr = byDay[daysToUse[i]];
     const delta = Number(curr.totalPortfolio || 0) - Number(prev.totalPortfolio || 0);
-    // Use UTC noon to avoid any DST-related date shifting in toLocaleDateString
-    const dayDate = new Date(daysToUse[i] + 'T12:00:00Z');
+    // Label with the PREVIOUS day (daysToUse[i-1]): cron runs 07:05 UTC = midnight PT,
+    // so "Apr 12 UTC snapshot" captures end-of-Apr-11 PT. The delta belongs to Apr 11.
+    const dayDate = new Date(daysToUse[i - 1] + 'T12:00:00Z');
     labels.push(dayDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }));
     deltas.push(delta);
   }
