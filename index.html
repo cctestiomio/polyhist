@@ -329,6 +329,16 @@
       transition: background .1s;
     }
     .position-item:hover { background: var(--surface2); }
+    .position-link {
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+    }
+    .position-link:hover .pos-title { text-decoration: underline; }
+    .position-link:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
     .pos-icon {
       width: 32px;
       height: 32px;
@@ -596,6 +606,18 @@ function escHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// Build the Polymarket frontend URL for a position.
+// Prefer eventSlug (lands on the event page that contains all child markets,
+// e.g. a sports O/U or a multi-bucket weather event), fall back to the
+// market-level slug, and return null if neither is available so the caller
+// can render a non-clickable row instead of a broken link.
+function polymarketUrl(p) {
+  if (!p) return null;
+  if (p.eventSlug) return `https://polymarket.com/event/${encodeURIComponent(p.eventSlug)}`;
+  if (p.slug) return `https://polymarket.com/market/${encodeURIComponent(p.slug)}`;
+  return null;
 }
 
 function setFileStatus(text) {
@@ -1115,28 +1137,31 @@ function renderWalletCard(idx, addr, positions, cashBalance, authoritativePositi
     const isYes = p.outcome?.toLowerCase() === 'yes';
     const price = Number(p.curPrice || 0) * 100;
     const shares = Number(p.size || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+    const marketUrl = polymarketUrl(p);
 
-    return `
-      <div class="position-item">
-        <div class="pos-icon">
-          ${p.icon ? `<img src="${p.icon}" alt="" onerror="this.style.display='none'">` : '◈'}
+    const inner = `
+      <div class="pos-icon">
+        ${p.icon ? `<img src="${escHtml(p.icon)}" alt="" onerror="this.style.display='none'">` : '◈'}
+      </div>
+      <div class="pos-info">
+        <div class="pos-title">${escHtml(p.title || 'Unknown Market')}</div>
+        <div class="pos-outcome">
+          <span class="outcome-badge ${isYes ? 'outcome-yes' : 'outcome-no'}">${escHtml(p.outcome || '?')}</span>
+          <span class="pos-detail">${price.toFixed(0)}¢ · ${shares} shares</span>
         </div>
-        <div class="pos-info">
-          <div class="pos-title">${escHtml(p.title || 'Unknown Market')}</div>
-          <div class="pos-outcome">
-            <span class="outcome-badge ${isYes ? 'outcome-yes' : 'outcome-no'}">${escHtml(p.outcome || '?')}</span>
-            <span class="pos-detail">${price.toFixed(0)}¢ · ${shares} shares</span>
-          </div>
-          <div class="pos-price-bar">
-            <div class="pos-price-fill" style="width:${Math.min(price, 100)}%"></div>
-          </div>
-        </div>
-        <div class="pos-right">
-          <div class="pos-val">${fmt(Number(p.currentValue || 0))}</div>
-          <div class="pos-pnl ${colorVal(pnl)}">${fmtSigned(pnl)}</div>
+        <div class="pos-price-bar">
+          <div class="pos-price-fill" style="width:${Math.min(price, 100)}%"></div>
         </div>
       </div>
+      <div class="pos-right">
+        <div class="pos-val">${fmt(Number(p.currentValue || 0))}</div>
+        <div class="pos-pnl ${colorVal(pnl)}">${fmtSigned(pnl)}</div>
+      </div>
     `;
+
+    return marketUrl
+      ? `<a class="position-item position-link" href="${escHtml(marketUrl)}" target="_blank" rel="noopener noreferrer" title="Open on Polymarket">${inner}</a>`
+      : `<div class="position-item">${inner}</div>`;
   }).join('');
 
   const cashLabel = `USDC.e ${fmt(cashBreakdown['USDC.e'] || 0)} · USDC ${fmt(cashBreakdown['USDC'] || 0)} · pUSD ${fmt(cashBreakdown['pUSD'] || 0)}`;
