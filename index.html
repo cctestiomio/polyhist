@@ -302,6 +302,13 @@
       font-weight: 700;
       font-variant-numeric: tabular-nums;
     }
+    .ws-note {
+      margin-top: 3px;
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 600;
+      white-space: nowrap;
+    }
 
     .positions-wrap { padding: 16px 20px; }
     .positions-title {
@@ -480,12 +487,12 @@
     <div class="stat-card">
       <div class="stat-label">Unrealized P&amp;L</div>
       <div class="stat-value" id="totalUnrealized">—</div>
-      <div class="stat-sub" id="totalUnrealizedPct">—</div>
+      <div class="stat-sub" id="totalUnrealizedPct">Open positions only</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Realized P&amp;L</div>
       <div class="stat-value" id="totalRealized">—</div>
-      <div class="stat-sub">All time</div>
+      <div class="stat-sub" id="totalPnlSub">Overall P&amp;L: —</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Total Cash</div>
@@ -715,6 +722,55 @@ async function fetchPositions(addr) {
   }
 
   return out;
+}
+
+async function fetchClosedPositions(addr) {
+  const limit = 50;
+  let offset = 0;
+  const out = [];
+
+  while (true) {
+    const batch = await fetchJSON(
+      `${DATA_API}/closed-positions?user=${addr}&limit=${limit}&offset=${offset}&sortBy=TIMESTAMP&sortDirection=DESC`
+    );
+
+    if (!Array.isArray(batch) || batch.length === 0) break;
+    out.push(...batch);
+    if (batch.length < limit) break;
+    offset += limit;
+  }
+
+  return out;
+}
+
+function positionKey(position) {
+  return [
+    position?.conditionId || '',
+    position?.asset || '',
+    position?.outcomeIndex ?? '',
+    position?.outcome || ''
+  ].join('|');
+}
+
+function calculatePnl(openPositions, closedPositions = []) {
+  const open = Array.isArray(openPositions) ? openPositions : [];
+  const closed = Array.isArray(closedPositions) ? closedPositions : [];
+  const openKeys = new Set(open.map(positionKey));
+  const closedOnly = closed.filter((position) => !openKeys.has(positionKey(position)));
+
+  const unrealized = open.reduce((sum, p) => sum + Number(p.cashPnl || 0), 0);
+  const realizedOpen = open.reduce((sum, p) => sum + Number(p.realizedPnl || 0), 0);
+  const realizedClosed = closedOnly.reduce((sum, p) => sum + Number(p.realizedPnl || 0), 0);
+  const realized = realizedOpen + realizedClosed;
+
+  return {
+    unrealized,
+    realized,
+    realizedOpen,
+    realizedClosed,
+    total: unrealized + realized,
+    closedCount: closedOnly.length
+  };
 }
 
 async function fetchPositionValue(addr) {
@@ -1126,9 +1182,10 @@ function setWindow(win) {
   renderCharts(win);
 }
 
-function renderWalletCard(idx, addr, positions, cashBalance, authoritativePositionValue, cashBreakdown = {}) {
-  const totalUnreal = positions.reduce((s, p) => s + Number(p.cashPnl || 0), 0);
-  const totalReal = positions.reduce((s, p) => s + Number(p.realizedPnl || 0), 0);
+function renderWalletCard(idx, addr, positions, closedPositions, cashBalance, authoritativePositionValue, cashBreakdown = {}) {
+  const pnl = calculatePnl(positions, closedPositions);
+  const totalUnreal = pnl.unrealized;
+  const totalReal = pnl.realized;
   const positionValue = Number(authoritativePositionValue || 0);
   const walletPortfolio = positionValue + Number(cashBalance || 0);
 
@@ -1196,6 +1253,7 @@ function renderWalletCard(idx, addr, positions, cashBalance, authoritativePositi
       <div class="ws">
         <div class="ws-label">Realized</div>
         <div class="ws-val ${colorVal(totalReal)}">${fmtSigned(totalReal)}</div>
+        <div class="ws-note">${pnl.closedCount.toLocaleString()} closed included</div>
       </div>
     </div>
     <div class="positions-wrap">
@@ -1239,8 +1297,10 @@ async function loadAll() {
 
   ['totalPortfolio', 'totalUnrealized', 'totalRealized', 'totalCash']
     .forEach(id => { document.getElementById(id).textContent = '…'; });
+  document.getElementById('totalPnlSub').textContent = 'Overall P&L: …';
 
   const results = [];
+  const closedResults = [];
   const cashResults = [];
   const cashBreakdownResults = [];
   const valueResults = [];
@@ -1248,8 +1308,12 @@ async function loadAll() {
   await Promise.allSettled(
     WALLETS.map(async (addr, i) => {
       try {
-        const [positions, cashBreakdown, positionValue] = await Promise.all([
+        const [positions, closedPositions, cashBreakdown, positionValue] = await Promise.all([
           fetchPositions(addr),
+          fetchClosedPositions(addr).catch(err => {
+            console.warn(`Closed positions fetch failed for ${addr}:`, err);
+            return [];
+          }),
           fetchAllCashBalances(addr),
           fetchPositionValue(addr).catch(err => {
             console.warn(`Value fetch failed for ${addr}:`, err);
@@ -1258,13 +1322,15 @@ async function loadAll() {
         ]);
 
         results[i] = Array.isArray(positions) ? positions : [];
+        closedResults[i] = Array.isArray(closedPositions) ? closedPositions : [];
         cashBreakdownResults[i] = cashBreakdown || { 'USDC.e': 0, 'USDC': 0, 'pUSD': 0, totalCash: 0 };
         cashResults[i] = Number(cashBreakdownResults[i].totalCash || 0);
         valueResults[i] = Number.isFinite(Number(positionValue)) ? Number(positionValue) : 0;
 
-        renderWalletCard(i, addr, results[i], cashResults[i], valueResults[i], cashBreakdownResults[i]);
+        renderWalletCard(i, addr, results[i], closedResults[i], cashResults[i], valueResults[i], cashBreakdownResults[i]);
       } catch (e) {
         results[i] = [];
+        closedResults[i] = [];
         cashResults[i] = 0;
         valueResults[i] = 0;
         cashBreakdownResults[i] = { 'USDC.e': 0, 'USDC': 0, 'pUSD': 0, totalCash: 0 };
@@ -1290,12 +1356,20 @@ async function loadAll() {
   );
 
   const allPos = results.flat();
+  const allClosedPos = closedResults.flat();
   const grandCash = cashResults.reduce((s, n) => s + Number(n || 0), 0);
   const grandPositionValue = valueResults.reduce((s, n) => s + Number(n || 0), 0);
   const grandTotal = grandPositionValue + grandCash;
 
-  const grandUnreal = allPos.reduce((s, p) => s + Number(p.cashPnl || 0), 0);
-  const grandReal = allPos.reduce((s, p) => s + Number(p.realizedPnl || 0), 0);
+  const grandPnlBreakdown = WALLETS.reduce((totals, _, i) => {
+    const walletPnl = calculatePnl(results[i], closedResults[i]);
+    totals.unrealized += walletPnl.unrealized;
+    totals.realized += walletPnl.realized;
+    totals.closedCount += walletPnl.closedCount;
+    return totals;
+  }, { unrealized: 0, realized: 0, closedCount: 0 });
+  const grandUnreal = grandPnlBreakdown.unrealized;
+  const grandReal = grandPnlBreakdown.realized;
   const grandInit = allPos.reduce((s, p) => s + Number(p.initialValue || 0), 0);
   const grandPnl = grandUnreal + grandReal;
   const pct = grandInit > 0 ? (grandUnreal / grandInit) * 100 : 0;
@@ -1311,6 +1385,7 @@ async function loadAll() {
       address: addr,
       cash: Number(cashResults[i] || 0),
       positions: Number(valueResults[i] || 0),
+      closedPositions: Array.isArray(closedResults[i]) ? closedResults[i].length : 0,
       usdc_e: Number(cashBreakdownResults[i]?.['USDC.e'] || 0),
       usdc: Number(cashBreakdownResults[i]?.['USDC'] || 0),
       pusd: Number(cashBreakdownResults[i]?.['pUSD'] || 0)
@@ -1329,10 +1404,13 @@ async function loadAll() {
   set('totalCash', fmt(grandCash), 'neutral');
 
   document.getElementById('totalPositions').textContent =
-    `${allPos.length} listed positions across ${WALLETS.length} wallets`;
+    `${allPos.length} open + ${allClosedPos.length} closed positions across ${WALLETS.length} wallets`;
 
   document.getElementById('totalUnrealizedPct').textContent =
-    fmtPct(pct) + ' unrealized';
+    fmtPct(pct) + ' unrealized on open positions';
+
+  document.getElementById('totalPnlSub').textContent =
+    `Overall P&L: ${fmtSigned(grandPnl)} · ${grandPnlBreakdown.closedCount.toLocaleString()} closed included`;
 
   renderCharts(currentWindow);
 
